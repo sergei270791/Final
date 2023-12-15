@@ -10,46 +10,37 @@ ventas_bp = Blueprint('ventas', __name__)
 def crear_venta():
     data = request.get_json()
     ruc = data.get('ruc')
-    products = data.get('products')  # Lista de productos
+    cost_total = data.get('cost_total')
+    id_producto = data.get('id_prod')
+    cantidad = data.get('cantidad')
 
+    stock_response = requests.get(f'http://localhost:8080/almacen/stock/{id_producto}')
+    
     g.db = get_db()
-    cursor = g.db.cursor()
 
-    for product in products:
-        id_producto = product.get('id_prod')
-        cantidad = product.get('cantidad')
-        cost_total = product.get('cost_total')
-        total = product.get('total')
-        cost = product.get('cost')
-        nombre_producto = product.get('nombre_producto')
+    if stock_response.status_code == 200:
+        stock_data = stock_response.json()
+        stock = stock_data.get('stock')
+        nombre_producto = stock_data.get('nombre')
 
-        stock_response = requests.get(f'http://localhost:8080/almacen/stock/{id_producto}')
-        
-        if stock_response.status_code == 200:
-            stock_data = stock_response.json()
-            stock = stock_data.get('stock')
+        if cantidad > stock:
+            return jsonify({'message': f'No hay suficiente stock para {nombre_producto} ({id_producto})'}), 400
 
-            if cantidad > stock:
-                return jsonify({'message': f'No hay suficiente stock para {nombre_producto} ({id_producto})'}), 400
+        # Si hay suficiente stock, proceder con la creación de la venta
+        cursor = g.db.cursor()
+        cursor.execute('INSERT INTO Ventas (RUC, NAME, COST_TOTAL) VALUES (?, ?, ?)', (ruc, nombre_producto, cost_total))
+        g.db.commit()
 
-            # Si hay suficiente stock, proceder con la creación de la venta y detalles de venta
-            cursor.execute('INSERT INTO Ventas (RUC, NAME, COST_TOTAL) VALUES (?, ?, ?)', (ruc, nombre_producto, total))
-            id_venta = cursor.lastrowid  # Obtener el ID de la venta insertada
-            cursor.execute('INSERT INTO DetalleVentas (ID_SALES, ID_PROD, NOMBRE, NAME_PROD, UNIT, AMOUNT, COST, TOTAL) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (id_venta, id_producto, nombre_producto, nombre_producto, 1, cantidad, cost, total))
+        # Actualizar el stock en el otro servidor
+        stock_update_response = requests.post(f'http://localhost:8080/almacen/stock/{id_producto}', json={'amountSold': cantidad})
+        if stock_update_response.status_code != 200:
+            return jsonify({'message': 'Error al actualizar el stock en el servidor externo'}), 500
 
-            # Actualizar el stock en el otro servidor
-            stock_update_response = requests.post(f'http://localhost:8080/almacen/stock/{id_producto}', json={'amountSold': cantidad})
-            if stock_update_response.status_code != 200:
-                return jsonify({'message': 'Error al actualizar el stock en el servidor externo'}), 500
+        return jsonify({'message': f'Venta de {nombre_producto} creada exitosamente y stock actualizado', 'ruc': ruc, 'nombre_producto': nombre_producto, 'costo_total': cost_total}), 201
 
-        else:
-            # Manejar el caso en que la solicitud de stock no fue exitosa
-            return jsonify({'message': f'Error al obtener el stock para el producto con ID {id_producto}'}), 500
-
-    # Confirmar todas las ventas y detalles de ventas después de verificar el stock
-    g.db.commit()
-
-    return jsonify({'message': 'Todas las ventas y detalles de ventas creados exitosamente y stock actualizado'}), 201
+    else:
+        # Manejar el caso en que la solicitud de stock no fue exitosa
+        return jsonify({'message': f'Error al obtener el stock para el producto con ID {id_producto}'}), 500
 
 
 
