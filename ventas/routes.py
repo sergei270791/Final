@@ -42,14 +42,14 @@ def crear_venta():
     # Confirmar todas las ventas y detalles de ventas después de verificar el stock
     g.db.commit()
 
-    """ # Actualizar el stock en el otro servidor
+    # Actualizar el stock en el otro servidor
     for product in products:
         id_producto = product.get('id_prod')
         cantidad = product.get('cantidad')
         stock_update_response = requests.post(f'http://localhost:8080/almacen/stock/{id_producto}', json={'amountSold': cantidad})
         if stock_update_response.status_code != 200:
             return jsonify({'message': 'Error al actualizar el stock en el servidor externo'}), 500
- """
+
     return jsonify({'message': 'Todas las ventas y detalles de ventas creados exitosamente y stock actualizado'}), 201
 
 
