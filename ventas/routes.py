@@ -46,7 +46,7 @@ def crear_venta():
     for product in products:
         id_producto = product.get('id_prod')
         cantidad = product.get('cantidad')
-        stock_update_response = requests.post(f'http://localhost:8080/almacen/stock/{id_producto}', json={'amountSold': cantidad})
+        stock_update_response = requests.post(f'http://localhost:8080/stock/{id_producto}', json={'amountSold': cantidad})
         if stock_update_response.status_code != 200:
             return jsonify({'message': 'Error al actualizar el stock en el servidor externo'}), 500
 
