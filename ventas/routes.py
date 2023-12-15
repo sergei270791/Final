@@ -28,11 +28,16 @@ def crear_venta():
         cursor.execute('INSERT INTO Ventas (RUC, NAME, COST_TOTAL) VALUES (?, ?, ?)', (ruc, nombre_producto, cost_total))
         g.db.commit()
 
-        return jsonify({'message': f'Venta de {nombre_producto} creada exitosamente', 'ruc': ruc, 'nombre_producto': nombre_producto, 'costo_total': cost_total}), 201
+        # Actualizar el stock en el otro servidor
+        stock_update_response = requests.post(f'http://localhost:3000/stock/{id_producto}', json={'amountSold': cantidad})
+        if stock_update_response.status_code != 200:
+            return jsonify({'message': 'Error al actualizar el stock en el servidor externo'}), 500
+
+        return jsonify({'message': f'Venta de {nombre_producto} creada exitosamente y stock actualizado', 'ruc': ruc, 'nombre_producto': nombre_producto, 'costo_total': cost_total}), 201
+
     else:
         # Manejar el caso en que la solicitud de stock no fue exitosa
         return jsonify({'message': f'Error al obtener el stock para el producto con ID {id_producto}'}), 500
-
 
 @ventas_bp.route('/ventas/<int:id_venta>', methods=['PUT'])
 def actualizar_venta(id_venta):
