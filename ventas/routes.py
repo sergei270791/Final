@@ -115,18 +115,25 @@ def actualizar_detalle_venta(id_venta, id_detalle):
 
 @ventas_bp.route('/ventas', methods=['GET'])
 def obtener_ventas():
-    # Lógica para obtener todas las ventas
-    # Usualmente se hace una consulta a la base de datos para obtener los datos
-    
     g.db = get_db()
-    
-    # Ejemplo:
     cursor = g.db.cursor()
+
     cursor.execute('SELECT * FROM Ventas')
-    ventas = cursor.fetchall()
+    rows = cursor.fetchall()
+
+    # Convertir cada fila en un diccionario
+    ventas = []
+    for row in rows:
+        venta = {
+            'ID_SALES': row[0],
+            'RUC': row[1],
+            'NAME': row[2],
+            'COST_TOTAL': row[3]
+        }
+        ventas.append(venta)
 
     return jsonify(ventas), 200
-    #return jsonify({'message': 'Obtener todas las ventas'}), 200
+
 
 @ventas_bp.route('/ventas/<int:id_venta>', methods=['GET'])
 def obtener_venta_por_id(id_venta):
