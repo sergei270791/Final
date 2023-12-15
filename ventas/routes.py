@@ -24,7 +24,7 @@ def crear_venta():
         cost = product.get('cost')
         total = product.get('total')
 
-        stock_response = requests.get(f'http://localhost:8080/almacen/stock/{id_producto}')
+        """ stock_response = requests.get(f'http://localhost:8080/almacen/stock/{id_producto}')
         if stock_response.status_code != 200:
             return jsonify({'message': f'Error al obtener el stock para el producto con ID {id_producto}'}), 500
 
@@ -32,7 +32,7 @@ def crear_venta():
         stock = stock_data.get('stock')
 
         if cantidad > stock:
-            return jsonify({'message': f'No hay suficiente stock para {nombre_producto} ({id_producto})'}), 400
+            return jsonify({'message': f'No hay suficiente stock para {nombre_producto} ({id_producto})'}), 400 """
 
         # Si hay suficiente stock, agregar la venta y el detalle de venta a la base de datos (sin confirmar todavía)
         cursor.execute('INSERT INTO Ventas (RUC, NAME, COST_TOTAL) VALUES (?, ?, ?)', (ruc, nombre_producto, cost_total))
@@ -42,14 +42,14 @@ def crear_venta():
     # Confirmar todas las ventas y detalles de ventas después de verificar el stock
     g.db.commit()
 
-    # Actualizar el stock en el otro servidor
+    """ # Actualizar el stock en el otro servidor
     for product in products:
         id_producto = product.get('id_prod')
         cantidad = product.get('cantidad')
         stock_update_response = requests.post(f'http://localhost:8080/almacen/stock/{id_producto}', json={'amountSold': cantidad})
         if stock_update_response.status_code != 200:
             return jsonify({'message': 'Error al actualizar el stock en el servidor externo'}), 500
-
+ """
     return jsonify({'message': 'Todas las ventas y detalles de ventas creados exitosamente y stock actualizado'}), 201
 
 
