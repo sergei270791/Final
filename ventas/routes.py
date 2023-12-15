@@ -19,6 +19,8 @@ def crear_venta():
         id_producto = product.get('id_prod')
         cantidad = product.get('cantidad')
         cost_total = product.get('cost_total')
+        total = product.get('total')
+        cost = product.get('cost')
         nombre_producto = product.get('nombre_producto')
 
         stock_response = requests.get(f'http://localhost:8080/almacen/stock/{id_producto}')
@@ -31,9 +33,9 @@ def crear_venta():
                 return jsonify({'message': f'No hay suficiente stock para {nombre_producto} ({id_producto})'}), 400
 
             # Si hay suficiente stock, proceder con la creación de la venta y detalles de venta
-            cursor.execute('INSERT INTO Ventas (RUC, NAME, COST_TOTAL) VALUES (?, ?, ?)', (ruc, nombre_producto, cost_total))
+            cursor.execute('INSERT INTO Ventas (RUC, NAME, COST_TOTAL) VALUES (?, ?, ?)', (ruc, nombre_producto, total))
             id_venta = cursor.lastrowid  # Obtener el ID de la venta insertada
-            cursor.execute('INSERT INTO DetalleVentas (ID_SALES, ID_PROD, NOMBRE, NAME_PROD, UNIT, AMOUNT, COST, TOTAL) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (id_venta, id_producto, nombre_producto, nombre_producto, 1, cantidad, product.get('cost'), cost_total))
+            cursor.execute('INSERT INTO DetalleVentas (ID_SALES, ID_PROD, NOMBRE, NAME_PROD, UNIT, AMOUNT, COST, TOTAL) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (id_venta, id_producto, nombre_producto, nombre_producto, 1, cantidad, cost, total))
 
             # Actualizar el stock en el otro servidor
             stock_update_response = requests.post(f'http://localhost:8080/almacen/stock/{id_producto}', json={'amountSold': cantidad})
@@ -48,6 +50,7 @@ def crear_venta():
     g.db.commit()
 
     return jsonify({'message': 'Todas las ventas y detalles de ventas creados exitosamente y stock actualizado'}), 201
+
 
 
 
