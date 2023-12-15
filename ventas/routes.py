@@ -1,9 +1,11 @@
 from flask import Blueprint
 from flask import g, request, jsonify
 import requests
+from db import get_db
 
 
 ventas_bp = Blueprint('ventas', __name__)
+
 
 @ventas_bp.route('/ventas', methods=['POST'])
 def crear_venta():
@@ -14,6 +16,8 @@ def crear_venta():
     cantidad = data.get('cantidad')
 
     stock_response = requests.get(f'http://localhost:3000/stock/{id_producto}')
+    
+    g.db = get_db()
 
     if stock_response.status_code == 200:
         stock_data = stock_response.json()
@@ -46,6 +50,8 @@ def actualizar_venta(id_venta):
     name = data.get('name')
     cost_total = data.get('cost_total')
     
+    g.db = get_db()
+    
     cursor = g.db.cursor()
     cursor.execute('UPDATE Ventas SET RUC=?, NAME=?, COST_TOTAL=? WHERE ID_SALES=?',
                    (ruc, name, cost_total, id_venta))
@@ -55,6 +61,7 @@ def actualizar_venta(id_venta):
 
 @ventas_bp.route('/ventas/<int:id_venta>', methods=['DELETE'])
 def eliminar_venta(id_venta):
+    g.db = get_db()
     cursor = g.db.cursor()
     cursor.execute('DELETE FROM Ventas WHERE ID_SALES=?', (id_venta,))
     g.db.commit()
@@ -63,6 +70,7 @@ def eliminar_venta(id_venta):
 
 @ventas_bp.route('/ventas/<int:id_venta>/detalle', methods=['POST'])
 def crear_detalle_venta(id_venta):
+    g.db = get_db()
     data = request.get_json()
     id_prod = data.get('id_prod')
     nombre = data.get('nombre')
@@ -83,6 +91,7 @@ def crear_detalle_venta(id_venta):
 
 @ventas_bp.route('/ventas/<int:id_venta>/detalle/<int:id_detalle>', methods=['PUT'])
 def actualizar_detalle_venta(id_venta, id_detalle):
+    g.db = get_db()
     data = request.get_json()
     nombre = data.get('nombre')
     unit = data.get('unit')
@@ -107,6 +116,8 @@ def obtener_ventas():
     # Lógica para obtener todas las ventas
     # Usualmente se hace una consulta a la base de datos para obtener los datos
     
+    g.db = get_db()
+    
     # Ejemplo:
     cursor = g.db.cursor()
     cursor.execute('SELECT * FROM Ventas')
@@ -119,6 +130,8 @@ def obtener_ventas():
 def obtener_venta_por_id(id_venta):
     # Lógica para obtener una venta por su ID
     # Ejemplo:
+    g.db = get_db()
+    
     cursor = g.db.cursor()
     cursor.execute('SELECT * FROM Ventas WHERE ID_SALES=?', (id_venta,))
     venta = cursor.fetchone()
