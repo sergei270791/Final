@@ -11,15 +11,21 @@ ventas_bp = Blueprint('ventas', __name__)
 def crear_venta():
     data = request.get_json()
     ruc = data.get('ruc')
-    cost_total = data.get('cost_total')
-    id_producto = data.get('id_prod')
-    cantidad = data.get('cantidad')
+    ventas = data.get('ventas')  # 'ventas' es una lista de productos
 
-    stock_response = requests.get(f'http://localhost:8080/almacen/stock/{id_producto}')
-    
     g.db = get_db()
+    cursor = g.db.cursor()
 
-    if stock_response.status_code == 200:
+    # Verificar el stock para cada producto
+    for venta in ventas:
+        id_producto = venta.get('id_prod')
+        cantidad = venta.get('cantidad')
+        cost_total = venta.get('cost_total')
+
+        stock_response = requests.get(f'http://localhost:8080/almacen/stock/{id_producto}')
+        if stock_response.status_code != 200:
+            return jsonify({'message': f'Error al obtener el stock para el producto con ID {id_producto}'}), 500
+
         stock_data = stock_response.json()
         stock = stock_data.get('stock')
         nombre_producto = stock_data.get('nombre')
@@ -27,21 +33,22 @@ def crear_venta():
         if cantidad > stock:
             return jsonify({'message': f'No hay suficiente stock para {nombre_producto} ({id_producto})'}), 400
 
-        # Si hay suficiente stock, proceder con la creación de la venta
-        cursor = g.db.cursor()
+        # Si hay suficiente stock, agregar la venta a la base de datos (sin confirmar todavía)
         cursor.execute('INSERT INTO Ventas (RUC, NAME, COST_TOTAL) VALUES (?, ?, ?)', (ruc, nombre_producto, cost_total))
-        g.db.commit()
 
-        # Actualizar el stock en el otro servidor
+    # Confirmar todas las ventas después de verificar el stock
+    g.db.commit()
+
+    # Actualizar el stock en el otro servidor
+    for venta in ventas:
+        id_producto = venta.get('id_prod')
+        cantidad = venta.get('cantidad')
         stock_update_response = requests.post(f'http://localhost:8080/almacen/stock/{id_producto}', json={'amountSold': cantidad})
         if stock_update_response.status_code != 200:
             return jsonify({'message': 'Error al actualizar el stock en el servidor externo'}), 500
 
-        return jsonify({'message': f'Venta de {nombre_producto} creada exitosamente y stock actualizado', 'ruc': ruc, 'nombre_producto': nombre_producto, 'costo_total': cost_total}), 201
+    return jsonify({'message': 'Todas las ventas creadas exitosamente y stock actualizado'}), 201
 
-    else:
-        # Manejar el caso en que la solicitud de stock no fue exitosa
-        return jsonify({'message': f'Error al obtener el stock para el producto con ID {id_producto}'}), 500
 
 @ventas_bp.route('/ventas/<int:id_venta>', methods=['PUT'])
 def actualizar_venta(id_venta):
