@@ -15,7 +15,7 @@ def crear_venta():
     id_producto = data.get('id_prod')
     cantidad = data.get('cantidad')
 
-    stock_response = requests.get(f'http://localhost:8080/stock/{id_producto}')
+    stock_response = requests.get(f'http://localhost:8080/almacen/stock/{id_producto}')
     
     g.db = get_db()
 
@@ -33,7 +33,7 @@ def crear_venta():
         g.db.commit()
 
         # Actualizar el stock en el otro servidor
-        stock_update_response = requests.post(f'http://localhost:8080/stock/{id_producto}', json={'amountSold': cantidad})
+        stock_update_response = requests.post(f'http://localhost:8080/almacen/stock/{id_producto}', json={'amountSold': cantidad})
         if stock_update_response.status_code != 200:
             return jsonify({'message': 'Error al actualizar el stock en el servidor externo'}), 500
 
